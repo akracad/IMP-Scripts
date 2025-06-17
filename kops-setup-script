@@ -1,0 +1,49 @@
+#!/bin/bash
+
+set -e  # Exit immediately if a command exits with a non-zero status
+
+#Install unzip
+
+echo "🧩 Updating system and installing unzip..."
+sudo apt update -y
+sudo apt install -y unzip curl gnupg apt-transport-https ca-certificates
+
+#install aws-cli
+
+echo "☁️ Installing AWS CLI v2..."
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+rm -rf aws awscliv2.zip
+
+#install kops
+
+echo "🔧 Installing kops..."
+KOPS_VERSION=$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)
+curl -Lo kops https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-amd64
+chmod +x kops
+sudo mv kops /usr/local/bin/kops
+
+#Install kubectl
+
+echo "📦 Installing kubectl (v1.33)..."
+# Optional: Create keyring directory if it doesn't exist
+sudo mkdir -p -m 755 /etc/apt/keyrings
+
+# Import GPG key for Kubernetes
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+# Add Kubernetes apt repo
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
+
+# Install kubectl
+sudo apt update -y
+sudo apt install -y kubectl
+
+echo "✅ All tools installed successfully!"
+echo "Versions:"
+aws --version
+kops version
+kubectl version --client
